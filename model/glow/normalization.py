@@ -34,19 +34,24 @@ class ActNorm(FlowModuleBase):
         self.register_buffer('running_var', torch.ones(num_inputs))
 
     def forward(self, inputs):
-        self.batch_mean = inputs.mean(0)
-        self.batch_var = (inputs - self.batch_mean).pow(2).mean(0) + self.eps
+        if self.training:
+            self.batch_mean = inputs.mean(0)
+            self.batch_var = (
+                                     inputs - self.batch_mean).pow(2).mean(0) + self.eps
 
-        self.running_mean.mul_(self.momentum)
-        self.running_var.mul_(self.momentum)
+            self.running_mean.mul_(self.momentum)
+            self.running_var.mul_(self.momentum)
 
-        self.running_mean.add_(self.batch_mean.data *
-                               (1 - self.momentum))
-        self.running_var.add_(self.batch_var.data *
-                              (1 - self.momentum))
+            self.running_mean.add_(self.batch_mean.data *
+                                   (1 - self.momentum))
+            self.running_var.add_(self.batch_var.data *
+                                  (1 - self.momentum))
 
-        mean = self.batch_mean
-        var = self.batch_var
+            mean = self.batch_mean
+            var = self.batch_var
+        else:
+            mean = self.running_mean
+            var = self.running_var
 
         x_hat = (inputs - mean) / var.sqrt()
         y = torch.exp(self.log_gamma) * x_hat + self.beta

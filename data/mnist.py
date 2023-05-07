@@ -12,6 +12,7 @@ def get_mnist_train(batch_size=256,
     transform = transforms.Compose([
         transforms.Resize((32, 32)),
         transforms.ToTensor(),
+        transforms.Normalize([0.5], [0.5]),
     ])
     set = MNIST('./resources/mnist/', train=True, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory,
@@ -25,6 +26,7 @@ def get_mnist_test(batch_size=256,
     transform = transforms.Compose([
         transforms.Resize((32, 32)),
         transforms.ToTensor(),
+        transforms.Normalize([0.5], [0.5]),
     ])
     set = MNIST('./resources/mnist/', train=False, download=True, transform=transform)
     loader = DataLoader(set, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)

@@ -26,7 +26,7 @@ class FlowSolver():
 
     def train(self,
               loader: DataLoader,
-              total_epoch=200,
+              total_epoch=2000,
               ):
         '''
 
@@ -43,8 +43,6 @@ class FlowSolver():
             for step, (x, y) in enumerate(pbar, 1):
                 x, y = x.to(self.device), y.to(self.device)
                 loss = -self.student.log_likelihood(*self.student(x.view(x.shape[0], -1))).mean()
-                print(loss)
-                print('-' * 100)
                 train_loss += loss.item()
                 self.optimizer.zero_grad()
 

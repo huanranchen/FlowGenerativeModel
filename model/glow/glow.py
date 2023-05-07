@@ -11,26 +11,23 @@ __all__ = ['Glow']
 class Block(FlowModuleBase):
     def __init__(self, input_dim, last=False):
         super(Block, self).__init__()
-        # self.bn = ActNorm(input_dim)
+        self.bn = ActNorm(input_dim)
         self.perm = Permutation(input_dim)
-        mask = torch.zeros(input_dim, device=self.device)
-        if not last:
-            mask[:input_dim // 2] = 1
-        else:
-            mask[:input_dim // 2] = 1
+        mask = torch.arange(input_dim, device=self.device)
+        mask = mask % 2
         self.affine = CouplingLayer(mask, input_dim)
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         # x, d1 = self.bn(x)
         x, d2 = self.perm(x)
         x, d3 = self.affine(x)
-        print(torch.mean(d2).item(), torch.mean(d3).item())
+        # print(torch.mean(d3).item())
         return x, d2 + d3
 
     def inverse(self, x: Tensor) -> Tensor:
         x = self.affine.inverse(x)
         x = self.perm.inverse(x)
-        x = self.bn.inverse(x)
+        # x = self.bn.inverse(x)
         return x
 
 
@@ -50,7 +47,7 @@ class Glow(FlowModuleBase):
         return x, det
 
     def inverse(self, x: Tensor) -> Tensor:
-        for w in self.w:
+        for w in reversed(self.w):
             x = w.inverse(x)
         return x
 
@@ -61,5 +58,5 @@ class Glow(FlowModuleBase):
         :return:
         """
         latent_likelihood = - torch.sum(x ** 2, dim=1) / 2 - self.input_dim * math.log(2 * math.pi) / 2
-        print(torch.mean(latent_likelihood), torch.mean(log_determinant))
-        return latent_likelihood + log_determinant
+        # print(torch.mean(latent_likelihood).item(), torch.mean(log_determinant).item())
+        return latent_likelihood + torch.clamp(log_determinant, max=1000)

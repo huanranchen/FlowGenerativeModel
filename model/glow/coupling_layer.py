@@ -15,7 +15,8 @@ class CouplingLayer(FlowModuleBase):
             nn.Linear(input_dim // bottleneck_ratio, input_dim // bottleneck_ratio),
             nn.BatchNorm1d(input_dim // bottleneck_ratio),
             nn.Tanh(),
-            nn.Linear(input_dim // bottleneck_ratio, input_dim)
+            nn.Linear(input_dim // bottleneck_ratio, input_dim),
+            nn.Tanh(),
         )
         self.b = nn.Sequential(
             nn.Linear(input_dim, input_dim // bottleneck_ratio),
@@ -24,7 +25,8 @@ class CouplingLayer(FlowModuleBase):
             nn.Linear(input_dim // bottleneck_ratio, input_dim // bottleneck_ratio),
             nn.BatchNorm1d(input_dim // bottleneck_ratio),
             nn.ReLU(),
-            nn.Linear(input_dim // bottleneck_ratio, input_dim)
+            nn.Linear(input_dim // bottleneck_ratio, input_dim),
+            nn.Tanh(),
         )
         for m in self.modules():
             if isinstance(m, nn.Linear):
@@ -32,10 +34,10 @@ class CouplingLayer(FlowModuleBase):
                 nn.init.orthogonal_(m.weight.data)
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
-        masked_x = x * self.mask  # 不变的部分
-        weight = self.w(masked_x) * (1 - self.mask)  # 预测变的部分
+        masked_x = x * self.mask
+        weight = self.w(masked_x) * (1 - self.mask)
         bias = self.b(masked_x) * (1 - self.mask)
-        out = torch.exp(weight) * x + bias  # 为什么要exp？为什么要全正数？
+        out = torch.exp(weight) * x + bias
         log_determinant = torch.sum(weight, dim=1)
         return out, log_determinant
 
@@ -43,5 +45,5 @@ class CouplingLayer(FlowModuleBase):
         invariant = x * self.mask
         weight = self.w(invariant) * (1 - self.mask)  # 预测变的部分
         bias = self.b(invariant) * (1 - self.mask)
-        out = (x - bias) / weight
+        out = (x - bias) * torch.exp(-weight)
         return out
