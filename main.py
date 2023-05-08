@@ -16,8 +16,15 @@ loader = get_mnist_train()
 # model = Block(32 * 32)
 
 model.eval().cuda()
-x = torch.randn((1, 32 * 32)).cuda()
+# x = torch.randn((1, 32 * 32)).cuda()
+x, y = next(iter(loader))
+x = x[0]
+save_image(x, 'ori.png')
+x = (x - 0.5) * 2
+x = x.view(1, 32 * 32).cuda()
+x = model(x)[0]
 ori_x = x.clone()
+x = x + torch.randn_like(x)
 x = model.inverse(x)
 print(torch.sum((model(x)[0] - ori_x) ** 2))
 x = x.view(1, 1, 32, 32)

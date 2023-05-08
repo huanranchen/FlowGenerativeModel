@@ -4,34 +4,24 @@ from torch import nn
 
 
 class CouplingLayer(FlowModuleBase):
-    def __init__(self, mask, input_dim, bottleneck_ratio=1):
+    def __init__(self, mask, input_dim, bottleneck_ratio=2):
         super(CouplingLayer, self).__init__()
         self.mask = mask
 
         self.w = nn.Sequential(
             nn.Linear(input_dim, input_dim // bottleneck_ratio),
-            nn.BatchNorm1d(input_dim // bottleneck_ratio),
-            nn.Tanh(),
-            nn.Linear(input_dim // bottleneck_ratio, input_dim // bottleneck_ratio),
-            nn.BatchNorm1d(input_dim // bottleneck_ratio),
-            nn.Tanh(),
+            nn.LayerNorm(input_dim // bottleneck_ratio),
+            nn.ReLU(),
             nn.Linear(input_dim // bottleneck_ratio, input_dim),
             nn.Tanh(),
         )
         self.b = nn.Sequential(
             nn.Linear(input_dim, input_dim // bottleneck_ratio),
-            nn.BatchNorm1d(input_dim // bottleneck_ratio),
-            nn.ReLU(),
-            nn.Linear(input_dim // bottleneck_ratio, input_dim // bottleneck_ratio),
-            nn.BatchNorm1d(input_dim // bottleneck_ratio),
+            nn.LayerNorm(input_dim // bottleneck_ratio),
             nn.ReLU(),
             nn.Linear(input_dim // bottleneck_ratio, input_dim),
             nn.Tanh(),
         )
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                m.bias.data.fill_(0)
-                nn.init.orthogonal_(m.weight.data)
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         masked_x = x * self.mask
